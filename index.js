@@ -152,8 +152,23 @@ async function run() {
       });
     });
 
-   
+    // update a job
+    app.patch("/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
 
+      const filter = { _id: new ObjectId(id) };
+      const update = { $set: updateData };
+
+      const result = await Job.updateOne(filter, update);
+      res.status(200).json({
+        success: true,
+        message: "Job Successfully Updated",
+        result,
+      });
+    });
+
+    
 
 
 
