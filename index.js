@@ -141,7 +141,19 @@ async function run() {
       });
     });
 
-    
+    // get a single job
+    app.get("/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await Job.findOne({ _id: new ObjectId(id) });
+      res.status(200).json({
+        success: true,
+        message: "Jobs Successfully Retrieved",
+        result,
+      });
+    });
+
+   
+
 
 
 
