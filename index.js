@@ -67,8 +67,33 @@ const Job = client.db("job-portal-db").collection("job");
 
 async function run() {
   try {
-    
 
+
+    // Token Generate
+    app.post("/jwt", async (req, res) => {
+      const data = req.body;
+      const token = jwt.sign(data, process.env.JWT_ACCESS_TOKEN, {
+        expiresIn: "1d",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+        })
+        .send({ success: true });
+    });
+
+
+
+
+
+
+
+
+
+    
     await client.connect();
     await client.db("admin").command({ ping: 1 });
     console.log("Database connection established!");
