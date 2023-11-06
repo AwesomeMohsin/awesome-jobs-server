@@ -111,7 +111,38 @@ async function run() {
       }
     });
 
+    // get jobs
+    app.get("/jobs", async (req, res) => {
+      const queryObj = { ...req.query };
+      const excludeQueries = ["page", "sort", "limit", "fields", "search"];
+      excludeQueries.forEach((el) => delete queryObj[el]);
+
+      const queryString = JSON.stringify(queryObj);
+
+      let filter = JSON.parse(queryString);
+
+      if (req.query.search) {
+        filter.title = { $regex: req.query.search, $options: "i" };
+      }
+
+      const projection = {
+        banner: 0,
+        description: 0,
+        company: 0,
+      };
+
+      const result = await Job.find(filter).project(projection).toArray();
+
+      res.status(200).json({
+        success: true,
+        message: "Jobs Successfully Retrieved",
+        count: result.length,
+        result,
+      });
+    });
+
     
+
 
 
 
