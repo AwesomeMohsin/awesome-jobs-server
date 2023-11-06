@@ -86,14 +86,38 @@ async function run() {
     });
 
 
+    // Post a Job
+    app.post("/jobs", async (req, res) => {
+      const jobData = req.body;
+      const isValidJob = validateJob(jobData);
 
+      if (isValidJob) {
+        const formatDeadline = new Date(jobData.deadline).toISOString();
+        jobData.deadline = formatDeadline;
 
+        jobData.applicants = 0;
 
+        const currentDate = new Date().toISOString();
+        jobData.createdAt = currentDate;
 
-
-
+        const result = await Job.insertOne(jobData);
+        res.status(201).json({
+          success: true,
+          message: "Job Posted Successfully",
+          result,
+        });
+      } else {
+        res.status(400).json({ success: false, message: "Job Data Invalid" });
+      }
+    });
 
     
+
+
+
+
+
+
     await client.connect();
     await client.db("admin").command({ ping: 1 });
     console.log("Database connection established!");
