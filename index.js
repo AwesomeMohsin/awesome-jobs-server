@@ -168,7 +168,42 @@ async function run() {
       });
     });
 
-    
+    // delete a job
+    app.delete("/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const filter = { _id: new ObjectId(id) };
+
+      const result = await Job.deleteOne(filter);
+      res.status(200).json({
+        success: true,
+        message: "Job Successfully Deleted",
+        result,
+      });
+    });
+
+    // get my jobs
+    app.get("/my/jobs", verifyJwt, async (req, res) => {
+      const email = req.query.email;
+      const requestedEmail = req.user;
+      if (requestedEmail === email) {
+        const filter = { "created_by.email": email };
+        const result = await Job.find(filter).toArray();
+        res.status(200).json({
+          success: true,
+          message: "Jobs Successfully Retrieved",
+          count: result.length,
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
+    });
+
+   
+
 
 
 
