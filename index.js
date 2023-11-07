@@ -21,11 +21,11 @@ app.use(cookieParser());
 const verifyJwt = async (req, res, next) => {
   const token = req.cookies.token;
   if (!token) {
-    res.status(401).json({ success: false, message: "Unauthorized access" });
+    return res.status(401).json({ success: false, message: "Unauthorized access" });
   }
   jwt.verify(token, process.env.JWT_ACCESS_TOKEN, (err, decoded) => {
     if (err) {
-      res.status(403).json({ success: false, message: "Forbidden access" });
+      return res.status(403).json({ success: false, message: "Forbidden access" });
     }
     req.user = decoded.email;
     next();
@@ -84,6 +84,15 @@ async function run() {
         })
         .send({ success: true });
     });
+
+    // logout user
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      console.log('logging out', user);
+      res
+        .clearCookie('token', { maxAge: 0 })
+        .send({ success: true })
+    })
 
 
     // Post a Job
@@ -226,7 +235,27 @@ async function run() {
       }
     });
 
-   
+    // delete my job
+    app.delete("/my/jobs/:id", verifyJwt, async (req, res) => {
+      const id = req.query.id;
+      const email = req.query.email;
+      const requestedEmail = req.user;
+      if (requestedEmail === email) {
+        const filter = { _id: new ObjectId(id) };
+
+        const result = await Job.deleteOne(filter);
+        res.status(200).json({
+          success: true,
+          message: "Job Successfully Deleted",
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Access Forbidden" });
+      }
+    });
+
 
 
 
