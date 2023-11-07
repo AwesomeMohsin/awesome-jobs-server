@@ -202,8 +202,31 @@ async function run() {
       }
     });
 
-   
+    // update my job
+    app.patch("/my/jobs/:id", verifyJwt, async (req, res) => {
+      const id = req.query.id;
+      const updatedData = req.body;
+      const email = req.query.email;
+      const requestedEmail = req.user;
+      if (requestedEmail === email) {
+        const filter = { _id: new ObjectId(id) };
+        const update = { $set: updatedData };
 
+        const result = await Job.updateOne(filter, update);
+        res.status(200).json({
+          success: true,
+          message: "Job Successfully Updated",
+          count: result.length,
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
+    });
+
+   
 
 
 
