@@ -88,7 +88,6 @@ async function run() {
     // logout user
     app.post('/logout', async (req, res) => {
       const user = req.body;
-      console.log('logging out', user);
       res
         .clearCookie('token', { maxAge: 0 })
         .send({ success: true })
@@ -213,7 +212,7 @@ async function run() {
 
     // update my job
     app.patch("/my/jobs/:id", verifyJwt, async (req, res) => {
-      const id = req.query.id;
+      const id = req.params.id;
       const updatedData = req.body;
       const email = req.query.email;
       const requestedEmail = req.user;
@@ -237,7 +236,7 @@ async function run() {
 
     // delete my job
     app.delete("/my/jobs/:id", verifyJwt, async (req, res) => {
-      const id = req.query.id;
+      const id = req.params.id;
       const email = req.query.email;
       const requestedEmail = req.user;
       if (requestedEmail === email) {
