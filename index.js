@@ -14,7 +14,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://awesome-jobs-c9d23.web.app",
-      "https://awesome-jobs-c9d23.firebaseapp.com"
+      "https://cautious-trsdasdsucks.surge.sh"
     ],
     credentials: true,
   })
@@ -66,6 +66,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
+
 
 const Job = client.db("job-portal-db").collection("job");
 
@@ -260,87 +263,96 @@ async function run() {
     });
 
 
-    // apply a job
-    app.patch("/applied-jobs/:id", verifyJwt, async (req, res) => {
-      const email = req.body.email;
-      const requestedEmail = req.user;
-      const id = req.params.id;
-      const updateData = req.body;
+   // apply a job
+   app.patch("/applied-job/:id", verifyJwt, async (req, res) => {
+    const email = req.body.email;
+    const requestedEmail = req.user;
+    const id = req.params.id;
+    const updateData = req.body;
 
-      const job = await Job.findOne({ _id: new ObjectId(id) });
+    const job = await Job.findOne({ _id: new ObjectId(id) });
 
-      const isAlreadyApplied = job.candidates.some(
-        (candidate) => candidate.email === requestedEmail
-      );
+    const isAlreadyApplied = job.candidates.some(
+      (candidate) => candidate.email === requestedEmail
+    );
 
-      if (isAlreadyApplied) {
-        return res.status(409).json({
-          success: false,
-          message: "You have already applied to this job",
-        });
-      }
+    if (isAlreadyApplied) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already applied to this job",
+      });
+    }
 
-      if (email === requestedEmail) {
-        const filter = { _id: new ObjectId(id) };
-        const update = {
-          $inc: { applicants: 1 },
-          $push: {
-            candidates: {
-              name: updateData.name,
-              email: updateData.email,
-            },
+    if (email === requestedEmail) {
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $inc: { applicants: 1 },
+        $push: {
+          candidates: {
+            name: updateData.name,
+            email: updateData.email,
           },
-        };
+        },
+      };
 
-        const result = await Job.updateOne(filter, update);
-        res.status(200).json({
-          success: true,
-          message: "Job update successful",
-          result,
-        });
-      } else {
-        return res
-          .status(403)
-          .json({ success: false, message: "Forbidden access" });
+      const result = await Job.updateOne(filter, update);
+      res.status(200).json({
+        success: true,
+        message: "Job update successful",
+        result,
+      });
+    } else {
+      return res
+        .status(403)
+        .json({ success: false, message: "Forbidden access" });
+    }
+  });
+
+  // get my applied jobs
+  app.get("/applied-job/:email", verifyJwt, async (req, res) => {
+    const email = req.params.email;
+    const requestedEmail = req.user;
+
+    if (email === requestedEmail) {
+      const queryObj = { ...req.query };
+      const excludeQueries = ["page", "sort", "limit", "fields", "search"];
+      excludeQueries.forEach((el) => delete queryObj[el]);
+
+      if (req.query.search) {
+        queryObj["type"] = { $regex: req.query.search, $options: "i" };
       }
-    });
 
-    // get my applied jobs
-    app.get("/applied-jobs/", verifyJwt, async (req, res) => {
-      const email = req.query.email;
-      const requestedEmail = req.user;
+      const projection = {
+        candidates: 0,
+      };
 
-      if (email === requestedEmail) {
-        const projection = {
-          candidates: 0,
-        };
+      const result = await Job.find({
+        "candidates.email": email,
+        ...queryObj,
+      })
+        .project(projection)
+        .toArray();
 
-        const result = await Job.find({
-          "candidates.email": email,
-        })
-          .project(projection)
-          .toArray();
-
-        res.status(200).json({
-          success: true,
-          message: "Jobs applied retrieved successful",
-          count: result.length,
-          result,
-        });
-      } else {
-        return res
-          .status(403)
-          .json({ success: false, message: "Forbidden access" });
-      }
-    });
+      res.status(200).json({
+        success: true,
+        message: "Jobs applied retrieved successfully",
+        count: result.length,
+        result,
+      });
+    } else {
+      return res
+        .status(403)
+        .json({ success: false, message: "Forbidden access" });
+    }
+  });
 
 
 
 
 
 
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
+    // await client.connect();
+    // await client.db("admin").command({ ping: 1 });
     console.log("Database connection established!");
   } finally {
   }
