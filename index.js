@@ -11,7 +11,11 @@ const port = process.env.PORT || 5000;
 // middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: [
+      "http://localhost:5173",
+      "https://awesome-jobs-c9d23.web.app",
+      "https://awesome-jobs-c9d23.firebaseapp.com"
+    ],
     credentials: true,
   })
 );
@@ -82,7 +86,7 @@ async function run() {
           secure: true,
           sameSite: 'none',
         })
-        .send({ success: true });
+        .send();
     });
 
     // logout user
@@ -90,7 +94,7 @@ async function run() {
       const user = req.body;
       res
         .clearCookie('token', { maxAge: 0 })
-        .send({ success: true })
+        .send()
     })
 
 
@@ -102,7 +106,7 @@ async function run() {
       if (isValidJob) {
         const formatDeadline = new Date(jobData.deadline).toISOString();
         jobData.deadline = formatDeadline;
-
+        jobData.candidates = [];
         jobData.applicants = 0;
 
         const currentDate = new Date().toISOString();
@@ -256,6 +260,79 @@ async function run() {
     });
 
 
+    // apply a job
+    app.patch("/applied-jobs/:id", verifyJwt, async (req, res) => {
+      const email = req.body.email;
+      const requestedEmail = req.user;
+      const id = req.params.id;
+      const updateData = req.body;
+
+      const job = await Job.findOne({ _id: new ObjectId(id) });
+
+      const isAlreadyApplied = job.candidates.some(
+        (candidate) => candidate.email === requestedEmail
+      );
+
+      if (isAlreadyApplied) {
+        return res.status(409).json({
+          success: false,
+          message: "You have already applied to this job",
+        });
+      }
+
+      if (email === requestedEmail) {
+        const filter = { _id: new ObjectId(id) };
+        const update = {
+          $inc: { applicants: 1 },
+          $push: {
+            candidates: {
+              name: updateData.name,
+              email: updateData.email,
+            },
+          },
+        };
+
+        const result = await Job.updateOne(filter, update);
+        res.status(200).json({
+          success: true,
+          message: "Job update successful",
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
+    });
+
+    // get my applied jobs
+    app.get("/applied-jobs/", verifyJwt, async (req, res) => {
+      const email = req.query.email;
+      const requestedEmail = req.user;
+
+      if (email === requestedEmail) {
+        const projection = {
+          candidates: 0,
+        };
+
+        const result = await Job.find({
+          "candidates.email": email,
+        })
+          .project(projection)
+          .toArray();
+
+        res.status(200).json({
+          success: true,
+          message: "Jobs applied retrieved successful",
+          count: result.length,
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
+    });
 
 
 
