@@ -261,93 +261,71 @@ async function run() {
       }
     });
 
+    // apply a job
+    app.patch("/applied-job/:id", verifyJwt, async (req, res) => {
+      const email = req.body.email;
+      const requestedEmail = req.user;
+      const id = req.params.id;
+      const updateData = req.body;
 
-   // apply a job
-   app.patch("/applied-job/:id", verifyJwt, async (req, res) => {
-    const email = req.body.email;
-    const requestedEmail = req.user;
-    const id = req.params.id;
-    const updateData = req.body;
-
-    const job = await Job.findOne({ _id: new ObjectId(id) });
-
-    const isAlreadyApplied = job.candidates.some(
-      (candidate) => candidate.email === requestedEmail
-    );
-
-    if (isAlreadyApplied) {
-      return res.status(409).json({
-        success: false,
-        message: "You have already applied to this job",
-      });
-    }
-
-    if (email === requestedEmail) {
-      const filter = { _id: new ObjectId(id) };
-      const update = {
-        $inc: { applicants: 1 },
-        $push: {
-          candidates: {
-            name: updateData.name,
-            email: updateData.email,
+      if (email === requestedEmail) {
+        const filter = {
+          _id: new ObjectId(id)
+        };
+        const update = {
+          $inc: { applicants: 1 },
+          $push: {
+            candidates: {
+              name: updateData.name,
+              email: updateData.email,
+            },
           },
-        },
-      };
+        };
 
-      const result = await Job.updateOne(filter, update);
-      res.status(200).json({
-        success: true,
-        message: "Job update successful",
-        result,
-      });
-    } else {
-      return res
-        .status(403)
-        .json({ success: false, message: "Forbidden access" });
-    }
-  });
-
- // get my applied jobs
- app.get("/applied-job/:email", verifyJwt, async (req, res) => {
-  const email = req.params.email;
-  const requestedEmail = req.user;
-
-  if (email === requestedEmail) {
-    const queryObj = { ...req.query };
-    const excludeQueries = ["page", "sort", "limit", "fields", "search"];
-    excludeQueries.forEach((el) => delete queryObj[el]);
-
-    if (req.query.search) {
-      queryObj["title"] = { $regex: req.query.search, $options: "i" };
-    }
-
-    const projection = {
-      candidates: 0,
-    };
-
-    const result = await Job.find({
-      "candidates.email": email,
-      ...queryObj,
-    })
-      .project(projection)
-      .toArray();
-
-    res.status(200).json({
-      success: true,
-      message: "Jobs applied retrieved successfully",
-      count: result.length,
-      result,
+        const result = await Job.updateOne(filter, update);
+        res.status(200).json({
+          success: true,
+          message: "Job update successful",
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
     });
-  } else {
-    return res
-      .status(403)
-      .json({ success: false, message: "Forbidden access" });
-  }
-});
 
+    // get my applied jobs
+    app.get("/applied-job/:email", verifyJwt, async (req, res) => {
+      const email = req.params.email;
+      const requestedEmail = req.user;
 
+      if (email === requestedEmail) {
+        const queryObj = { ...req.query };
+        const excludeQueries = ["page", "sort", "limit", "fields", "search"];
+        excludeQueries.forEach((el) => delete queryObj[el]);
 
+        if (req.query.search) {
+          queryObj["title"] = { $regex: req.query.search, $options: "i" };
+        }
 
+        const result = await Job.find({
+          "candidates.email": email,
+          ...queryObj,
+        }).toArray();
+
+        res.status(200).json({
+          success: true,
+          message: "Jobs applied retrieved successfully",
+          count: result.length,
+          result,
+        });
+      } else {
+        return res
+          .status(403)
+          .json({ success: false, message: "Forbidden access" });
+      }
+    });
 
 
     // await client.connect();
