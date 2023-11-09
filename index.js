@@ -13,8 +13,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://awesome-jobs-c9d23.web.app",
-      "https://cautious-trsdasdsucks.surge.sh"
+      "https://awesome-jobs-2.web.app",
     ],
     credentials: true,
   })
@@ -308,43 +307,43 @@ async function run() {
     }
   });
 
-  // get my applied jobs
-  app.get("/applied-job/:email", verifyJwt, async (req, res) => {
-    const email = req.params.email;
-    const requestedEmail = req.user;
+ // get my applied jobs
+ app.get("/applied-job/:email", verifyJwt, async (req, res) => {
+  const email = req.params.email;
+  const requestedEmail = req.user;
 
-    if (email === requestedEmail) {
-      const queryObj = { ...req.query };
-      const excludeQueries = ["page", "sort", "limit", "fields", "search"];
-      excludeQueries.forEach((el) => delete queryObj[el]);
+  if (email === requestedEmail) {
+    const queryObj = { ...req.query };
+    const excludeQueries = ["page", "sort", "limit", "fields", "search"];
+    excludeQueries.forEach((el) => delete queryObj[el]);
 
-      if (req.query.search) {
-        queryObj["type"] = { $regex: req.query.search, $options: "i" };
-      }
-
-      const projection = {
-        candidates: 0,
-      };
-
-      const result = await Job.find({
-        "candidates.email": email,
-        ...queryObj,
-      })
-        .project(projection)
-        .toArray();
-
-      res.status(200).json({
-        success: true,
-        message: "Jobs applied retrieved successfully",
-        count: result.length,
-        result,
-      });
-    } else {
-      return res
-        .status(403)
-        .json({ success: false, message: "Forbidden access" });
+    if (req.query.search) {
+      queryObj["title"] = { $regex: req.query.search, $options: "i" };
     }
-  });
+
+    const projection = {
+      candidates: 0,
+    };
+
+    const result = await Job.find({
+      "candidates.email": email,
+      ...queryObj,
+    })
+      .project(projection)
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      message: "Jobs applied retrieved successfully",
+      count: result.length,
+      result,
+    });
+  } else {
+    return res
+      .status(403)
+      .json({ success: false, message: "Forbidden access" });
+  }
+});
 
 
 
