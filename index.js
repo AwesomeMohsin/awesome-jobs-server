@@ -95,8 +95,14 @@ async function run() {
     app.post('/logout', async (req, res) => {
       const user = req.body;
       res
-        .clearCookie('token', { maxAge: 0 })
-        .send()
+      res
+        .clearCookie('token', {
+          maxAge: 0,
+          secure: process.env.NODE_ENV === 'production' ? true : false,
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        })
+        .send({ status: true })
+
     })
 
 
